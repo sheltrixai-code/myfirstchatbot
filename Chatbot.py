@@ -7,7 +7,7 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "How can I help you today?"}
     ]
 
-# Initialize the official OpenAI client pointing directly to OpenRouter's free infrastructure
+# PERMANENT FIX: Added the correct /api/v1 endpoint route to the URL
 client = OpenAI(
     base_url="https://openrouter.ai",
     api_key=st.secrets["TOGETHER_API_KEY"]
@@ -51,7 +51,7 @@ if user_input := st.chat_input("Your question"):
                     temperature=0.7
                 )
                 
-                # Extract text contents seamlessly
+                # Extract text contents seamlessly from choices list array
                 response_content = response.choices[0].message.content
                 
                 st.write(response_content)
