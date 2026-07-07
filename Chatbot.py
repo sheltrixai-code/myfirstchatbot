@@ -1,11 +1,21 @@
 import streamlit as st
-import requests
+from openai import OpenAI
 
 # Initialize session state for UI message tracking
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": "How can I help you today?"}
     ]
+
+# Initialize official OpenAI client with mandatory OpenRouter headers
+client = OpenAI(
+    base_url="https://openrouter.ai",
+    api_key=st.secrets["TOGETHER_API_KEY"],
+    default_headers={
+        "HTTP-Referer": "https://localhost:8501", # Tells OpenRouter where the traffic is coming from
+        "X-Title": "Build Fast Chatbot"
+    }
+)
 
 # Create user interface
 st.title("🗣️ Conversational Chatbot")
@@ -41,35 +51,20 @@ if user_input := st.chat_input("Your question"):
                 # Add current user prompt explicitly
                 api_messages.append({"role": "user", "content": user_input})
                 
-                # Direct API Call using basic web requests
-                headers = {
-                    "Authorization": f"Bearer {st.secrets['TOGETHER_API_KEY']}",
-                    "Content-Type": "application/json"
-                }
-                
-                payload = {
-                    "model": "meta-llama/llama-3.3-70b-instruct:free",
-                    "messages": api_messages,
-                    "temperature": 0.7
-                }
-                
-                response = requests.post(
-                    "https://openrouter.ai",
-                    headers=headers,
-                    json=payload
+                # Call OpenRouter through the official, verified SDK channel
+                response = client.chat.completions.create(
+                    model="meta-llama/llama-3.3-70b-instruct:free",
+                    messages=api_messages,
+                    temperature=0.7
                 )
                 
-                # DIAGNOSTIC SAFETY NET: If the server breaks, show the exact raw text error message
-                if response.status_code != 200:
-                    st.error(f"Server Error (Status Code {response.status_code}): {response.text}")
-                else:
-                    response_json = response.json()
-                    if "choices" in response_json:
-                        response_content = response_json["choices"][0]["message"]["content"]
-                        st.write(response_content)
-                        st.session_state.messages.append({"role": "assistant", "content": response_content})
-                    else:
-                        st.error(f"Unexpected data format: {response_json}")
+                # Extract text content cleanly
+                response_content = response.choices[0].message.content
+                
+                st.write(response_content)
+                
+                # Add assistant message to history state
+                st.session_state.messages.append({"role": "assistant", "content": response_content})
                 
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
