@@ -1,6 +1,6 @@
 import streamlit as st
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_together import ChatTogether
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Initialize session state for UI messages
@@ -13,12 +13,10 @@ if "messages" not in st.session_state:
 if "langchain_history" not in st.session_state:
     st.session_state.langchain_history = []
 
-# Initialize ChatOpenAI with Together AI
-# Initialize ChatOpenAI with Together AI
-llm = ChatOpenAI(
+# Initialize ChatTogether directly (Fixes the base_url 404 website loop)
+llm = ChatTogether(
     model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
-    api_key=st.secrets["TOGETHER_API_KEY"],
-    base_url="https://together.xyz",
+    together_api_key=st.secrets["TOGETHER_API_KEY"],
     temperature=0.7
 )
 
@@ -54,7 +52,7 @@ if user_input := st.chat_input("Your question"):
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                # Invoke the chain directly, passing our clean list of history messages
+                # Invoke the chain directly
                 response = chain.invoke({
                     "input": user_input,
                     "history": st.session_state.langchain_history
