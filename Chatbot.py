@@ -1,5 +1,5 @@
 import streamlit as st
-from langchain_together import ChatTogether
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 # Initialize session state for UI and history tracking
@@ -8,10 +8,10 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "How can I help you today?"}
     ]
 
-# Initialize ChatTogether using OpenRouter's free service
-llm = ChatTogether(
+# Initialize ChatOpenAI pointing to OpenRouter's free service
+llm = ChatOpenAI(
     model="meta-llama/llama-3.3-70b-instruct:free",
-    together_api_key=st.secrets["TOGETHER_API_KEY"],
+    api_key=st.secrets["TOGETHER_API_KEY"],
     base_url="https://openrouter.ai",
     temperature=0.7
 )
@@ -53,7 +53,7 @@ if user_input := st.chat_input("Your question"):
                 # Append the brand new question at the end
                 formatted_messages.append(HumanMessage(content=user_input))
                 
-                # Invoke the model directly using the structured messages array
+                # Invoke the model directly using the standard OpenAI format
                 response = llm.invoke(formatted_messages)
                 
                 # Extract content safely
