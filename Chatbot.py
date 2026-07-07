@@ -14,8 +14,9 @@ if "langchain_history" not in st.session_state:
     st.session_state.langchain_history = []
 
 # Initialize ChatOpenAI with Together AI
+# Initialize ChatOpenAI with Together AI
 llm = ChatOpenAI(
-    model="meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
     api_key=st.secrets["TOGETHER_API_KEY"],
     base_url="https://together.xyz",
     temperature=0.7
