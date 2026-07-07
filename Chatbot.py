@@ -14,9 +14,11 @@ if "langchain_history" not in st.session_state:
     st.session_state.langchain_history = []
 
 # Initialize ChatTogether directly (Fixes the base_url 404 website loop)
+# Initialize ChatTogether using OpenRouter's free service
 llm = ChatTogether(
-    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    model="meta-llama/llama-3.3-70b-instruct:free",
     together_api_key=st.secrets["TOGETHER_API_KEY"],
+    base_url="https://openrouter.ai",
     temperature=0.7
 )
 
