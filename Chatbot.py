@@ -12,7 +12,7 @@ client = OpenAI(
     base_url="https://openrouter.ai",
     api_key=st.secrets["TOGETHER_API_KEY"],
     default_headers={
-        "HTTP-Referer": "https://localhost:8501", # Tells OpenRouter where the traffic is coming from
+        "HTTP-Referer": "https://localhost:8501",
         "X-Title": "Build Fast Chatbot"
     }
 )
@@ -28,42 +28,45 @@ for message in st.session_state.messages:
 
 # Chat input
 if user_input := st.chat_input("Your question"):
-    # Add user message to state
     st.session_state.messages.append({"role": "user", "content": user_input})
     
-    # Display user message instantly
     with st.chat_message("user"):
         st.write(user_input)
     
-    # Generate assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                # Construct clean payload history context
                 api_messages = [
                     {"role": "system", "content": "You are a helpful AI assistant. Have a natural conversation with the user."}
                 ]
                 
-                # Append the history context securely
                 for msg in st.session_state.messages[:-1]:
                     api_messages.append({"role": msg["role"], "content": msg["content"]})
                 
-                # Add current user prompt explicitly
                 api_messages.append({"role": "user", "content": user_input})
                 
-                # Call OpenRouter through the official, verified SDK channel
                 response = client.chat.completions.create(
                     model="meta-llama/llama-3.3-70b-instruct:free",
                     messages=api_messages,
                     temperature=0.7
                 )
                 
-                # Extract text content cleanly
-                response_content = response.choices[0].message.content
+                # FOOLPROOF EXTRACTION: Checks every data format to prevent 'choices' crashes
+                if isinstance(response, str):
+                    response_content = response
+                elif hasattr(response, 'choices') and response.choices:
+                    # Check if choices uses array index notation or property notation
+                    if isinstance(response.choices, list) and len(response.choices) > 0:
+                        choice = response.choices[0]
+                        response_content = choice.message.content if hasattr(choice, 'message') else choice.get('message', {}).get('content', str(choice))
+                    else:
+                        response_content = response.choices.message.content
+                elif isinstance(response, dict) and 'choices' in response:
+                    response_content = response['choices'][0]['message']['content']
+                else:
+                    response_content = str(response)
                 
                 st.write(response_content)
-                
-                # Add assistant message to history state
                 st.session_state.messages.append({"role": "assistant", "content": response_content})
                 
             except Exception as e:
