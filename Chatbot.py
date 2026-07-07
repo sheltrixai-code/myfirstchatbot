@@ -1,19 +1,16 @@
 import streamlit as st
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from openai import OpenAI
 
-# Initialize session state for UI and history tracking
+# Initialize session state for UI message tracking
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": "How can I help you today?"}
     ]
 
-# Initialize ChatOpenAI pointing to OpenRouter's free service
-llm = ChatOpenAI(
-    model="meta-llama/llama-3.3-70b-instruct:free",
-    api_key=st.secrets["TOGETHER_API_KEY"],
+# Initialize the official OpenAI client pointing directly to OpenRouter's free infrastructure
+client = OpenAI(
     base_url="https://openrouter.ai",
-    temperature=0.7
+    api_key=st.secrets["TOGETHER_API_KEY"]
 )
 
 # Create user interface
@@ -27,10 +24,10 @@ for message in st.session_state.messages:
 
 # Chat input
 if user_input := st.chat_input("Your question"):
-    # Add user message to UI state
+    # Add user message to state
     st.session_state.messages.append({"role": "user", "content": user_input})
     
-    # Display user message
+    # Display user message instantly
     with st.chat_message("user"):
         st.write(user_input)
     
@@ -38,30 +35,28 @@ if user_input := st.chat_input("Your question"):
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                # Build a clean list of message objects directly for the LLM
-                formatted_messages = [
-                    SystemMessage(content="You are a helpful AI assistant. Have a natural conversation with the user.")
+                # Construct clean payload including system prompt instructions
+                api_messages = [
+                    {"role": "system", "content": "You are a helpful AI assistant. Have a natural conversation with the user."}
                 ]
                 
-                # Dynamically load the previous back-and-forth context from session state
-                for msg in st.session_state.messages[:-1]:  # Exclude the newest input we just added
-                    if msg["role"] == "user":
-                        formatted_messages.append(HumanMessage(content=msg["content"]))
-                    elif msg["role"] == "assistant":
-                        formatted_messages.append(AIMessage(content=msg["content"]))
+                # Append the ongoing conversational history directly
+                for msg in st.session_state.messages:
+                    api_messages.append({"role": msg["role"], "content": msg["content"]})
                 
-                # Append the brand new question at the end
-                formatted_messages.append(HumanMessage(content=user_input))
+                # Call the raw endpoint API directly bypassing LangChain's internal serializer bugs
+                response = client.chat.completions.create(
+                    model="meta-llama/llama-3.3-70b-instruct:free",
+                    messages=api_messages,
+                    temperature=0.7
+                )
                 
-                # Invoke the model directly using the standard OpenAI format
-                response = llm.invoke(formatted_messages)
-                
-                # Extract content safely
-                response_content = response.content if hasattr(response, 'content') else str(response)
+                # Extract text contents seamlessly
+                response_content = response.choices[0].message.content
                 
                 st.write(response_content)
                 
-                # Add assistant message to UI history
+                # Add assistant message to history state
                 st.session_state.messages.append({"role": "assistant", "content": response_content})
                 
             except Exception as e:
