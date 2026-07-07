@@ -23,17 +23,17 @@ llm = ChatOpenAI(
 )
 
 # Create a prompt template with message history
-prompt = ChatPromptTemplate.from_messages([
+prompt_template = ChatPromptTemplate.from_messages([
     ("system", "You are a helpful AI assistant. Have a natural conversation with the user."),
     MessagesPlaceholder(variable_name="history"),
     ("human", "{input}")
 ])
 
 # Create the chain
-chain = prompt | llm
+chain = prompt_template | llm
 
-# Function to get session history
-def get_session_history() -> BaseChatMessageHistory:
+# FIX 1: Added session_id parameter to match LangChain's requirements
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
     return st.session_state.chat_history
 
 # Create runnable with message history
@@ -53,21 +53,21 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Chat input
-if prompt := st.chat_input("Your question"):
+# FIX 2: Renamed 'prompt' to 'user_input' to avoid overwriting variables
+if user_input := st.chat_input("Your question"):
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": user_input})
     
     # Display user message
     with st.chat_message("user"):
-        st.write(prompt)
+        st.write(user_input)
     
     # Generate assistant response
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             # Invoke the conversation chain
             response = conversation.invoke(
-                {"input": prompt},
+                {"input": user_input},
                 config={"configurable": {"session_id": "default"}}
             )
             
