@@ -41,7 +41,7 @@ if user_input := st.chat_input("Your question"):
                 # Add current user prompt explicitly
                 api_messages.append({"role": "user", "content": user_input})
                 
-                # Direct API Call using basic web requests - avoids ALL package serialization bugs
+                # Direct API Call using basic web requests
                 headers = {
                     "Authorization": f"Bearer {st.secrets['TOGETHER_API_KEY']}",
                     "Content-Type": "application/json"
@@ -59,20 +59,17 @@ if user_input := st.chat_input("Your question"):
                     json=payload
                 )
                 
-                # Parse the server response safely
-                response_json = response.json()
-                
-                if "choices" in response_json:
-                    response_content = response_json["choices"][0]["message"]["content"]
-                elif "error" in response_json:
-                    response_content = f"API Error: {response_json['error']['message']}"
+                # DIAGNOSTIC SAFETY NET: If the server breaks, show the exact raw text error message
+                if response.status_code != 200:
+                    st.error(f"Server Error (Status Code {response.status_code}): {response.text}")
                 else:
-                    response_content = "Received an unexpected server response format."
-                
-                st.write(response_content)
-                
-                # Add assistant message to history state
-                st.session_state.messages.append({"role": "assistant", "content": response_content})
+                    response_json = response.json()
+                    if "choices" in response_json:
+                        response_content = response_json["choices"][0]["message"]["content"]
+                        st.write(response_content)
+                        st.session_state.messages.append({"role": "assistant", "content": response_content})
+                    else:
+                        st.error(f"Unexpected data format: {response_json}")
                 
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
