@@ -7,7 +7,7 @@ if "messages" not in st.session_state:
         {"role": "assistant", "content": "How can I help you today?"}
     ]
 
-# PERMANENT FIX: Added the correct /api/v1 endpoint route to the URL
+# FIXED URL: The address MUST look exactly like this inside the quotes
 client = OpenAI(
     base_url="https://openrouter.ai",
     api_key=st.secrets["TOGETHER_API_KEY"]
@@ -35,23 +35,26 @@ if user_input := st.chat_input("Your question"):
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                # Construct clean payload including system prompt instructions
+                # Construct clean payload with system prompt instructions
                 api_messages = [
                     {"role": "system", "content": "You are a helpful AI assistant. Have a natural conversation with the user."}
                 ]
                 
-                # Append the ongoing conversational history directly
-                for msg in st.session_state.messages:
+                # Append the history context (excluding the very last entry to prevent duplication)
+                for msg in st.session_state.messages[:-1]:
                     api_messages.append({"role": msg["role"], "content": msg["content"]})
                 
-                # Call the raw endpoint API directly bypassing LangChain's internal serializer bugs
+                # Add current user prompt explicitly at the end of the history stack
+                api_messages.append({"role": "user", "content": user_input})
+                
+                # Call the API endpoint
                 response = client.chat.completions.create(
                     model="meta-llama/llama-3.3-70b-instruct:free",
                     messages=api_messages,
                     temperature=0.7
                 )
                 
-                # Extract text contents seamlessly from choices list array
+                # Extract response text content securely from standard list indices
                 response_content = response.choices[0].message.content
                 
                 st.write(response_content)
