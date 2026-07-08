@@ -1,20 +1,20 @@
 import streamlit as st
 import requests
 
-# Initialize session state for UI message tracking
+# 1. Initialize session state for UI message tracking
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "How can I help you today?"}]
 
-# Create user interface layout
+# 2. Render user interface headers
 st.title("🗣️ Conversational Chatbot")
 st.subheader("Simple Chat Interface for LLMs by Build Fast with AI")
 
-# Display existing chat messages on screen
+# 3. Render previous chat text dialogue components 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Handle incoming user questions
+# 4. Process incoming conversation prompts
 if user_input := st.chat_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
@@ -23,50 +23,46 @@ if user_input := st.chat_input("Your question"):
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
-                # Build context history stack safely
+                # Structure message data history context payload array
                 api_messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
                 for msg in st.session_state.messages[:-1]:
                     api_messages.append({"role": msg["role"], "content": msg["content"]})
                 api_messages.append({"role": "user", "content": user_input})
                 
-                # Fetch key cleanly from Streamlit secrets config
+                # Extract api key cleanly from Streamlit Cloud Secrets dashboard environment
                 api_key = st.secrets["TOGETHER_API_KEY"].strip().replace('"', '').replace("'", "")
                 
-                # CRITICAL HEADERS: Added User-Agent to bypass OpenRouter's bot firewall challenge
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://streamlit.io",
-                    "X-Title": "Build Fast AI Chatbot App",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                }
-                
-                payload = {
-                    "model": "google/gemini-2.5-flash:free",
-                    "messages": api_messages,
-                    "temperature": 0.7
-                }
-                
-                # Execute direct network call
+                # Execute direct network call with universal headers
                 response = requests.post(
                     "https://openrouter.ai",
-                    headers=headers,
-                    json=payload
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://streamlit.io",
+                        "X-Title": "Build Fast AI Chatbot App",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    },
+                    json={
+                        # UNIVERSAL FREEMIUM ROUTER: Automatically finds an available online free model
+                        "model": "openrouter/free",
+                        "messages": api_messages,
+                        "temperature": 0.7
+                    }
                 )
                 
-                try:
-                    data = response.json()
-                except Exception:
-                    data = None
-
-                if data and "choices" in data:
-                    response_content = data["choices"][0]["message"]["content"]
-                    st.write(response_content)
-                    st.session_state.messages.append({"role": "assistant", "content": response_content})
-                elif data and "error" in data:
-                    st.error(f"OpenRouter System Error: {data['error']['message']}")
+                # Check for bad server authentication gateway loops before parsing json structures
+                if "html" in response.text.lower() or response.status_code == 401:
+                    st.error("Authentication Error: The OpenRouter API key inside your Streamlit Cloud Secrets panel is invalid or copied incorrectly. Please generate a fresh key starting with 'sk-or-v1-' on OpenRouter and save it again.")
                 else:
-                    st.error(f"Server sent text fallback structure. First 300 characters: {response.text[:300]}")
+                    data = response.json()
+                    if "choices" in data and len(data["choices"]) > 0:
+                        response_content = data["choices"][0]["message"]["content"]
+                        st.write(response_content)
+                        st.session_state.messages.append({"role": "assistant", "content": response_content})
+                    elif "error" in data:
+                        st.error(f"OpenRouter Gateway Error Message: {data['error']['message']}")
+                    else:
+                        st.error(f"Unexpected Data Structure. Server status {response.status_code}. Response: {response.text[:200]}")
                         
             except Exception as e:
-                st.error(f"App processing error indicator: {e}")
+                st.error(f"App internal loop processing error: {e}")
