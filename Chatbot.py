@@ -37,7 +37,7 @@ if user_input := st.chat_input("Your question"):
                 }
                 
                 payload = {
-                    "model": "meta-llama/llama-3.3-70b-instruct:free",
+                    "model": "deepseek-ai/deepseek-r1:free",
                     "messages": api_messages,
                     "temperature": 0.7
                 }
