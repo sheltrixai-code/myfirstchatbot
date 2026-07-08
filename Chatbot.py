@@ -36,11 +36,11 @@ if user_input := st.chat_input("Your question"):
                     "X-Title": "Build Fast AI Chatbot App"
                 }
                 
-                payload = {
-                    "model": "deepseek-ai/deepseek-r1:free",
-                    "messages": api_messages,
-                    "temperature": 0.7
-                }
+               payload = {
+    "model": "openrouter/free",
+    "messages": api_messages,
+    "temperature": 0.7
+}
                 
                 # Execute direct post call
                 response = requests.post(
