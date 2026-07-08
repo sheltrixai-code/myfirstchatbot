@@ -32,19 +32,20 @@ if user_input := st.chat_input("Your question"):
                 headers = {
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "https://streamlit.app", # Fixed security gateway bypass route
+                    "HTTP-Referer": "https://streamlit.app",
                     "X-Title": "Build Fast AI Chatbot App"
                 }
                 
-               payload = {
-    "model": "openrouter/free",
-    "messages": api_messages,
-    "temperature": 0.7
-}
+                # Aligned payload dictionary structure
+                payload = {
+                    "model": "openrouter/free",
+                    "messages": api_messages,
+                    "temperature": 0.7
+                }
                 
                 # Execute direct post call
                 response = requests.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
+                    "https://openrouter.ai",
                     headers=headers,
                     json=payload
                 )
