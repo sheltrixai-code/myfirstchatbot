@@ -26,17 +26,22 @@ if user_input := st.chat_input("Your question"):
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
             try:
+                # Construct clean history payload
                 api_messages = [
                     {"role": "system", "content": "You are a helpful AI assistant. Have a natural conversation with the user."}
                 ]
                 
+                # Safely pass history up to the last turn
                 for msg in st.session_state.messages[:-1]:
                     api_messages.append({"role": msg["role"], "content": msg["content"]})
                 
                 api_messages.append({"role": "user", "content": user_input})
                 
+                # Fetch key securely from Streamlit secrets
+                raw_key = st.secrets["TOGETHER_API_KEY"].strip()
+                
                 headers = {
-                    "Authorization": f"Bearer {st.secrets['TOGETHER_API_KEY']}",
+                    "Authorization": f"Bearer {raw_key}",
                     "Content-Type": "application/json",
                     "HTTP-Referer": "https://localhost:8501",
                     "X-Title": "Build Fast Chatbot"
@@ -54,9 +59,9 @@ if user_input := st.chat_input("Your question"):
                     json=payload
                 )
                 
-                # Check for standard server response issues immediately
+                # Check server validation text immediately if the request failed
                 if response.status_code != 200:
-                    st.error(f"Server sent error code {response.status_code}. Raw content: {response.text}")
+                    st.error(f"OpenRouter Connection Error (Status {response.status_code}): {response.text}")
                 else:
                     response_json = response.json()
                     if "choices" in response_json:
@@ -64,7 +69,7 @@ if user_input := st.chat_input("Your question"):
                         st.write(response_content)
                         st.session_state.messages.append({"role": "assistant", "content": response_content})
                     else:
-                        st.error(f"Unexpected response data format: {response_json}")
+                        st.error(f"Unexpected response format: {response_json}")
                 
             except Exception as e:
                 st.error(f"Execution Error: {e}")
