@@ -68,7 +68,7 @@ if prompt := st.chat_input("Type your message..."):
                 }
 
                 payload = {
-                    "model": "deepseek/deepseek-r1-0528:free",
+                    "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
                     "messages": messages,
                     "temperature": 0.7
                 }
